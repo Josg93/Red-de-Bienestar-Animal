@@ -1,0 +1,29 @@
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+ viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve">
+<style type="text/css">
+.st0{fill:none;stroke:#231F20;stroke-width:25;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+.st1{fill:#231F20;}
+</style>
+<g>
+<path class="st0" d="M165.8,156.6c-53.1,0-70.8,115.2-70.8,132.9c0,70.8,62,88.6,88.6,88.6c26.6,0,44.3-17.7,67.3-17.7
+c23,0,40.7,17.7,67.3,17.7c26.6,0,88.6-17.7,88.6-88.6c0-17.7-17.7-132.9-70.8-132.9c-37.2,0-46,44.3-46,44.3H211.9
+C211.9,200.9,203,156.6,165.8,156.6z"/>
+<path class="st0" d="M250.9,323c0,0,8,3.8,18.8-1.3s19.2-16.3,19.2-16.3s-3.3-16.9-38-16.9s-38,16.9-38,16.9s8.3,11.2,19.2,16.3
+S250.9,323,250.9,323z"/>
+<line class="st0" x1="250.9" y1="336.8" x2="250.9" y2="378.1"/>
+<circle class="st1" cx="193.5" cy="276.9" r="22.1"/>
+<circle class="st1" cx="308.4" cy="276.9" r="22.1"/>
+<g>
+<circle class="st1" cx="219.4" cy="347.4" r="6.6"/>
+<circle class="st1" cx="203.9" cy="352.9" r="6.6"/>
+<circle class="st1" cx="229.4" cy="359.6" r="6.6"/>
+</g>
+<g>
+<circle class="st1" cx="283.6" cy="347.4" r="6.6"/>
+<circle class="st1" cx="299.1" cy="352.9" r="6.6"/>
+<circle class="st1" cx="273.6" cy="359.6" r="6.6"/>
+</g>
+<path class="st1" d="M250.9,323c0,0,8,3.8,18.8-1.3s19.2-16.3,19.2-16.3s-3.3-16.9-38-16.9s-38,16.9-38,16.9s8.3,11.2,19.2,16.3
+S250.9,323,250.9,323z"/>
+</g>
+</svg>
