@@ -36,6 +36,7 @@ class MapManager : public QObject
     Q_PROPERTY(QVariantList sortedReports READ sortedReports NOTIFY reportsChanged)
 public:
     explicit MapManager(QObject *parent = nullptr);
+    ~MapManager();
 
     Q_INVOKABLE void getRoute(double startLat, double startLon, double endLat, double endLon);
 
@@ -43,11 +44,11 @@ public:
 
     Q_INVOKABLE void calculateRouteToReport(double rescuerLat, double rescuerLon, int reportId);
 
-    //Q_INVOKABLE void updateNearestReports(double rescuerLat, double rescuerLon, int k = 5);
+    //K reportes mas cercanos
+    Q_INVOKABLE void updateNearestReports(double rescuerLat, double rescuerLon, int k = 5);
 
     QVariantList sortedReports() const;
 signals:
-    // This signal will send the list of points to QML
     void routeReady(QVariantList path);
     void reportsChanged();
 
@@ -59,10 +60,38 @@ private:
     // Helper function to decode Google's weird string
     QList<QGeoCoordinate> decodePolyline(const QString &encodedString);
 
+    //Tabla maestra de reportes
+    QHash<int, RescueReport> m_allReports;
+
     //cola de prioridad para los reportes lista auxiliar: Necesaria para exponer a QML (no se puede iterar sobre std::priority_queue)
     std::priority_queue<RescueReport, std::vector<RescueReport>, ReportComparator> m_priorityQueue;
     QList<RescueReport> m_sortedReports;
     void updateSortedList();
+
+
+
+    //-------------------Estructura arbol KD-----------------------
+    struct KDNode
+    {
+        int reportId;
+        QGeoCoordinate coordinate;
+        KDNode *left= nullptr;
+        KDNode *right= nullptr;
+        KDNode(int id, const QGeoCoordinate& coord) : reportId(id), coordinate(coord) {}
+    };
+
+    KDNode* m_kdTreeRoot = nullptr;
+
+    // --- Lógica del K-D Tree Dinámico ---
+    void insertNode(int id, const QGeoCoordinate& coord);
+    KDNode* insert(KDNode* node, int id, const QGeoCoordinate& coord, int depth);
+
+    void findKNearestNeighbors(const QGeoCoordinate& target, KDNode* node, int depth,
+        std::priority_queue<std::pair<double, RescueReport>,
+                            std::vector<std::pair<double, RescueReport>>,
+                            DistanceComparator>& topK
+        );
+    void clearKdTree(KDNode* node);
 };
 
 #endif // MAPMANAGER_H

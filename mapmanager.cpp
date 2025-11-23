@@ -14,11 +14,25 @@ MapManager::MapManager(QObject *parent) : QObject(parent)
     m_networkManager = new QNetworkAccessManager(this);
 }
 
+
+//Destruir arbol KD
+MapManager::~MapManager()
+{
+    // Limpiar la memoria del Árbol K-D para evitar fugas
+    clearKdTree(m_kdTreeRoot);
+}
+void MapManager::clearKdTree(KDNode* node) {
+    if (!node) return;
+    clearKdTree(node->left);
+    clearKdTree(node->right);
+    delete node;
+}
+
+
+//Ordenar reportes a mostrar QML ---------------------
 void MapManager::updateSortedList()
 {
-    // ... (la lógica es correcta. Ahora funciona porque RescueReport es copiable)
     m_sortedReports.clear();
-
     std::priority_queue<RescueReport, std::vector<RescueReport>, ReportComparator> tempQueue = m_priorityQueue;
 
     while (!tempQueue.empty()) {
@@ -27,51 +41,200 @@ void MapManager::updateSortedList()
     }
 }
 
-// Getter para QML
+//getter para QML
 QVariantList MapManager::sortedReports() const
 {
     QVariantList list;
-    // Esto funciona SOLO si RescueReport NO hereda de QObject y tiene Q_DECLARE_METATYPE
+
     for (const RescueReport& report : m_sortedReports) {
         list.append(QVariant::fromValue(report));
     }
     return list;
 }
-void MapManager::addReport(int id, double lat, double lon, int priority)
+//---------------------------------------------------
+
+
+
+
+
+MapManager::KDNode* MapManager::insert(KDNode* node, int id, const QGeoCoordinate& coord, int depth)
 {
-    RescueReport newReport(id, QGeoCoordinate(lat,lon), priority);
-    m_priorityQueue.push(newReport);
+    if (node == nullptr) {
+        return new KDNode(id, coord);
+    }
 
-    updateSortedList(); // Actualiza la QList para QML
-    emit reportsChanged();
-    qDebug() << "Report added. Priority:" << priority;
-}
+    // Nota: Aquí no se maneja la eliminación para simplificar.
+    // Si el ID ya existe, simplemente lo ignoramos o podrías manejarlo como una actualización.
+    // Para K-D Tree de puntos fijos, la posición debe ser única.
 
-void MapManager::calculateRouteToReport(double rescuerLat, double rescuerLon, int reportId)
-{
-    QGeoCoordinate targetCoord;
-    bool found = false;
+    const int k = 2; // Latitud y Longitud
+    int axis = depth % k;
 
-    for(const RescueReport& report : m_sortedReports)
-    {
-        if(report.id() == reportId)
-        {
-            targetCoord = report.coordinate();
-            found = true;
-            break;
+    // Comparar según el eje actual
+    if (axis == 0) { // Eje: Latitud
+        if (coord.latitude() < node->coordinate.latitude()) {
+            node->left = insert(node->left, id, coord, depth + 1);
+        } else {
+            node->right = insert(node->right, id, coord, depth + 1);
+        }
+    } else { // Eje: Longitud
+        if (coord.longitude() < node->coordinate.longitude()) {
+            node->left = insert(node->left, id, coord, depth + 1);
+        } else {
+            node->right = insert(node->right, id, coord, depth + 1);
         }
     }
 
-    if(found)
+    return node;
+}
+
+void MapManager::insertNode(int id, const QGeoCoordinate& coord)
+{
+    m_kdTreeRoot = insert(m_kdTreeRoot, id, coord, 0);
+}
+
+
+
+//--- k=5 vecinos cercanos
+void MapManager::findKNearestNeighbors(const QGeoCoordinate& target, KDNode* node, int depth,
+    std::priority_queue<std::pair<double, RescueReport>,
+                        std::vector<std::pair<double, RescueReport>>,
+                        DistanceComparator>& topK)
     {
-        getRoute(rescuerLat, rescuerLon, targetCoord.latitude(), targetCoord.longitude());
+
+    if (!node){return;}
+
+    const int k = 2;
+    const int maxK = 5; // Siempre buscamos los 5 más cercanos
+
+    // 1. Calcular distancia y actualizar Max-Heap
+    // Usamos la distancia esférica (en metros)
+    double distance = target.distanceTo(node->coordinate);
+
+
+    // Obtener el objeto RescueReport completo desde la QHash usando el ID
+    // Ignorar el nodo si el reporte fue eliminado lógicamente de la Hash
+    if (!m_allReports.contains(node->reportId)) {return;}
+    const RescueReport& report = m_allReports.value(node->reportId);
+
+    //condicion de parada del ciclo recursivo
+    if (topK.size() < maxK) {
+        topK.push({distance, report});
+    } else if (distance < topK.top().first) {
+        topK.pop();
+        topK.push({distance, report});
     }
-    else
+
+
+
+    // 2. Determinar qué lado buscar primero
+    int axis = depth % k;
+    double targetCoordValue = (axis == 0) ? target.latitude() : target.longitude();
+    double nodeCoordValue = (axis == 0) ? node->coordinate.latitude() : node->coordinate.longitude();
+
+    KDNode* nearChild = (targetCoordValue < nodeCoordValue) ? node->left : node->right;
+    KDNode* farChild = (targetCoordValue < nodeCoordValue) ? node->right : node->left;
+
+    // 3. Buscar en el lado más cercano
+    findKNearestNeighbors(target, nearChild, depth + 1, topK);
+
+    // 4. Poda (Pruning): ¿Necesitamos buscar en el otro lado?
+    // Convertimos la diferencia de coordenada al eje a metros de forma aproximada
+    // (111000m/grado) para compararlo con la distancia del punto más lejano en el Max-Heap.
+    double diff = std::abs(targetCoordValue - nodeCoordValue) * 111000.0;
+
+    // Si la distancia del hiperplano de división al objetivo es menor que la distancia del
+    // reporte más lejano encontrado (topK.top().first), hay que revisar el otro lado.
+    if (topK.size() < maxK || diff < topK.top().first)
     {
-        qDebug() << "Error: Reporte con ID" << reportId << "no encontrado";
+        findKNearestNeighbors(target, farChild, depth + 1, topK);
     }
 }
 
+
+
+
+// Función que ejecuta el flujo K-D Tree -> Priority Queue -> QML
+void MapManager::updateNearestReports(double rescuerLat, double rescuerLon, int k)
+{
+    if (!m_kdTreeRoot || m_allReports.isEmpty()) {
+        qDebug() << "ADVERTENCIA: Árbol K-D vacío. No se han añadido reportes.";
+        // Limpiar la lista visible
+        m_priorityQueue = std::priority_queue<RescueReport, std::vector<RescueReport>, ReportComparator>();
+        updateSortedList();
+        emit reportsChanged();
+        return;
+    }
+
+    QGeoCoordinate rescuerCoord(rescuerLat, rescuerLon);
+
+    // Max-heap temporal para el K-NN: {distancia_metros, RescueReport}
+    std::priority_queue<
+        std::pair<double, RescueReport>,
+        std::vector<std::pair<double, RescueReport>>,
+        DistanceComparator
+        > topKReports;
+
+    // 1. Buscar los K vecinos más cercanos con el Árbol K-D (K=5 por defecto)
+    findKNearestNeighbors(rescuerCoord, m_kdTreeRoot, 0, topKReports);
+
+    qDebug() << "Búsqueda K-D Tree completada. Encontrados" << topKReports.size() << "reportes más cercanos.";
+
+    // 2. Limpiar la cola de prioridad de la vista (m_priorityQueue)
+    // Se usa la asignación para resetear eficientemente
+    m_priorityQueue = std::priority_queue<RescueReport, std::vector<RescueReport>, ReportComparator>();
+
+    // 3. Insertar los K reportes encontrados en la cola de prioridad de la vista
+    // Esto ordena los 5 reportes por PRIORIDAD.
+    while (!topKReports.empty()) {
+        m_priorityQueue.push(topKReports.top().second);
+        topKReports.pop();
+    }
+
+    // 4. Actualizar la QList para QML y notificar a la vista
+    updateSortedList();
+    emit reportsChanged();
+
+    qDebug() << "Cola de prioridad de la vista actualizada (ordenada por Prioridad).";
+}
+
+
+// Modificado: Ahora solo añade a la QHash y al Árbol K-D dinámicamente
+void MapManager::addReport(int id, double lat, double lon, int priority)
+{
+    QGeoCoordinate coord(lat, lon);
+    RescueReport newReport(id, coord, priority);
+
+    // 1. Añadir/Actualizar en la Lista Maestra (QHash)
+    m_allReports.insert(id, newReport);
+
+    // 2. Insertar en el Árbol K-D de forma dinámica
+    insertNode(id, coord);
+
+    // Opcional: Podrías llamar a updateNearestReports aquí, pero es mejor que el QML lo
+    // llame periódicamente o por acción del usuario/movimiento del rescatista.
+}
+
+
+
+void MapManager::calculateRouteToReport(double rescuerLat, double rescuerLon, int reportId)
+{
+    // Usamos QHash para encontrar el reporte por ID en O(1)
+    if (!m_allReports.contains(reportId)) {
+        qWarning() << "Error: Reporte ID" << reportId << "no encontrado en la lista maestra (QHash).";
+        return;
+    }
+
+    const RescueReport& report = m_allReports.value(reportId);
+    QGeoCoordinate targetCoord = report.coordinate();
+
+    qDebug() << "Calculando ruta a Reporte ID:" << reportId << "en" << targetCoord.latitude() << targetCoord.longitude();
+    getRoute(rescuerLat, rescuerLon, targetCoord.latitude(), targetCoord.longitude());
+}
+
+
+
+//MANEJO GOOGLE API ---------------------------------------------------------------------------------
 void MapManager::getRoute(double startLat, double startLon, double endLat, double endLon)
 {
     QString urlString = QString("https://maps.googleapis.com/maps/api/directions/json?origin=%1,%2&destination=%3,%4&key=%5")
