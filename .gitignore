@@ -13,3 +13,5 @@ cmake-build-*/
 qrc_*.cpp
 .idea/
 .vscode/
+
+.env
