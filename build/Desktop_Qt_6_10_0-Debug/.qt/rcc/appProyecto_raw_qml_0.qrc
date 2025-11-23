@@ -1,0 +1,20 @@
+<RCC>
+  <qresource prefix="/Proyecto/">
+    <file alias="Main.qml">/home/laptop/Escritorio/Proyecto/Main.qml</file>
+    <file alias="rescuereport.h">/home/laptop/Escritorio/Proyecto/rescuereport.h</file>
+    <file alias="Theme.qml">/home/laptop/Escritorio/Proyecto/Theme.qml</file>
+    <file alias="Header.qml">/home/laptop/Escritorio/Proyecto/Header.qml</file>
+    <file alias="ViewSwitch.qml">/home/laptop/Escritorio/Proyecto/ViewSwitch.qml</file>
+    <file alias="DashboardView.qml">/home/laptop/Escritorio/Proyecto/DashboardView.qml</file>
+    <file alias="ApplicationScreen.qml">/home/laptop/Escritorio/Proyecto/ApplicationScreen.qml</file>
+    <file alias="RescueListView.qml">/home/laptop/Escritorio/Proyecto/RescueListView.qml</file>
+    <file alias="AdoptionView.qml">/home/laptop/Escritorio/Proyecto/AdoptionView.qml</file>
+    <file alias="AdoptionFilter.qml">/home/laptop/Escritorio/Proyecto/AdoptionFilter.qml</file>
+    <file alias="AddPetPopup.qml">/home/laptop/Escritorio/Proyecto/AddPetPopup.qml</file>
+    <file alias="PetImageGallery.qml">/home/laptop/Escritorio/Proyecto/PetImageGallery.qml</file>
+    <file alias="LostFoundView.qml">/home/laptop/Escritorio/Proyecto/LostFoundView.qml</file>
+    <file alias="ReportLostFoundPopup.qml">/home/laptop/Escritorio/Proyecto/ReportLostFoundPopup.qml</file>
+    <file alias="NavigationView.qml">/home/laptop/Escritorio/Proyecto/NavigationView.qml</file>
+  </qresource>
+</RCC>
+

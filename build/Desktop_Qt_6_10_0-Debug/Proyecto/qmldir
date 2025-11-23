@@ -1,0 +1,19 @@
+module Proyecto
+typeinfo appProyecto.qmltypes
+prefer :/Proyecto/
+Main 254.0 Main.qml
+singleton Theme 254.0 Theme.qml
+Header 254.0 Header.qml
+ViewSwitch 254.0 ViewSwitch.qml
+DashboardView 254.0 DashboardView.qml
+ApplicationScreen 254.0 ApplicationScreen.qml
+RescueListView 254.0 RescueListView.qml
+AdoptionView 254.0 AdoptionView.qml
+AdoptionFilter 254.0 AdoptionFilter.qml
+AddPetPopup 254.0 AddPetPopup.qml
+PetImageGallery 254.0 PetImageGallery.qml
+LostFoundView 254.0 LostFoundView.qml
+ReportLostFoundPopup 254.0 ReportLostFoundPopup.qml
+NavigationView 254.0 NavigationView.qml
+depends QtQuick
+

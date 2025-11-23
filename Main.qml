@@ -1,130 +1,54 @@
+pragma ComponentBehavior: Bound
+import QtCore
 import QtQuick
 import QtQuick.Window
 import QtLocation
 import QtPositioning
 import mapmanager
 
+
+
 Window {
-    width: 640
-    height: 480
+    id: root
+    //I HAVE TO CREATE THE LOADER WHEN OPENING THE APP ASWELL AS THE SIGNIN-Up
+    //IGNORE THIS FROM TEMPLATE i used before
+    // We change these from 'required property SatelliteModel' to 'property var'
+    // This allows the app to run even if we haven't fixed the C++ backend yet.
+    property var satellitesModel
+    property var sortFilterModel
+
+    width: 420 // Standard mobile width
+    height: 800
     visible: true
-    title: qsTr("Rescue Operations Command")
+    title: qsTr("Patitas Felices")
 
-    // --- 1. The C++ Manager ---
-    MapManager {
-        id: mapManager
+    // Keep the location permission logic
+    LocationPermission {
+        id: permission
+        accuracy: LocationPermission.Precise
+        availability: LocationPermission.WhenInUse
     }
 
-    // --- 2. The GPS Sensor ---
-    PositionSource {
-        id: gpsSource
-        active: true // Turn it on immediately
-
-        // Update as often as possible (for a moving rescuer)
-        updateInterval: 1000
-
-        // If on Desktop, this tries to guess via WiFi (often inaccurate)
-        // If on Android, this uses the real GPS chip.
+    Component {
+        id: applicationComponent
+        ApplicationScreen {
+            // We don't pass the models here right now,
+            // so the UI will run in "Prototype Mode"
+        }
     }
 
-    // --- 3. Define Coordinates ---
-
-    // RESCUER: This is now DYNAMIC. It updates automatically.
-    // We use a 'ternary operator' ( ? : ) to handle the case where
-    // the GPS hasn't found a signal yet.
-    property var rescuerCoord: gpsSource.valid
-                               ? gpsSource.position.coordinate
-                               : QtPositioning.coordinate(10.476, -66.580) // Default fallback (Guatire)
-
-    // ANIMAL: This would come from your Database/C++ logic later.
-    // For now, we keep it fixed nearby for testing.
-    property var animalCoord: QtPositioning.coordinate(10.480, -66.585)
-
-    Map {
-        id: rescueMap
+    Loader {
         anchors.fill: parent
-        plugin: Plugin { name: "osm" }
-
-        // Center on the Rescuer
-        center: rescuerCoord
-        zoomLevel: 16
-
-        // Marker for Rescuer (Blue)
-        MapQuickItem {
-            coordinate: rescuerCoord
-            anchorPoint.x: rescuerVal.width / 2
-            anchorPoint.y: rescuerVal.height / 2
-            sourceItem: Rectangle {
-                id: rescuerVal
-                width: 20; height: 20; radius: 10
-                color: "blue"
-                border.color: "white"; border.width: 2
-            }
-        }
-
-        // Marker for Animal (Red)
-        MapQuickItem {
-            coordinate: animalCoord
-            anchorPoint.x: animalVal.width / 2
-            anchorPoint.y: animalVal.height / 2
-            sourceItem: Rectangle {
-                id: animalVal
-                width: 20; height: 20; radius: 10
-                color: "red"
-                border.color: "white"; border.width: 2
-            }
-        }
-
-        // ... inside Map { ...
-
-            // 1. Define the Line
-            MapPolyline {
-                id: routeLine
-                line.width: 5
-                line.color: "blue" // The classic Google Maps blue
-                // path: [] // Starts empty
-            }
-
-            // 2. Receive the data from C++
-            Connections {
-                target: mapManager // Listen to our C++ class
-
-                function onRouteReady(path) {
-                    console.log("QML received the route!");
-                    routeLine.path = path; // Draw the line!
-                }
-            }
-
-        // ...
-    }
-
-    // --- 4. The "Get Route" Button ---
-    Rectangle {
-        width: 200; height: 50
-        color: "green"; radius: 10
-        anchors.bottom: parent.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.margins: 30
-
-        Text {
-            text: "CALCULATE ROUTE"
-            color: "white"; font.bold: true
-            anchors.centerIn: parent
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: {
-                console.log("Sending coordinates to C++...");
-                console.log("Rescuer:", rescuerCoord.latitude, rescuerCoord.longitude);
-                console.log("Animal:", animalCoord.latitude, animalCoord.longitude);
-
-                // PASS THE LIVE COORDINATES TO C++
-                mapManager.getRoute(
-                    rescuerCoord.latitude, rescuerCoord.longitude,
-                    animalCoord.latitude, animalCoord.longitude
-                )
-            }
-        }
+        active: permission.status === Qt.PermissionStatus.Granted
+        sourceComponent: applicationComponent
     }
 }
+
+
+
+
+
+
+
+
+

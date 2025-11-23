@@ -1,0 +1,227 @@
+[
+    {
+        "classes": [
+            {
+                "className": "MapManager",
+                "lineNumber": 33,
+                "methods": [
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "startLat",
+                                "type": "double"
+                            },
+                            {
+                                "name": "startLon",
+                                "type": "double"
+                            },
+                            {
+                                "name": "endLat",
+                                "type": "double"
+                            },
+                            {
+                                "name": "endLon",
+                                "type": "double"
+                            }
+                        ],
+                        "index": 2,
+                        "lineNumber": 41,
+                        "name": "getRoute",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "id",
+                                "type": "int"
+                            },
+                            {
+                                "name": "lat",
+                                "type": "double"
+                            },
+                            {
+                                "name": "lon",
+                                "type": "double"
+                            },
+                            {
+                                "name": "priority",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 3,
+                        "lineNumber": 43,
+                        "name": "addReport",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "rescuerLat",
+                                "type": "double"
+                            },
+                            {
+                                "name": "rescuerLon",
+                                "type": "double"
+                            },
+                            {
+                                "name": "reportId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 4,
+                        "lineNumber": 45,
+                        "name": "calculateRouteToReport",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "rescuerLat",
+                                "type": "double"
+                            },
+                            {
+                                "name": "rescuerLon",
+                                "type": "double"
+                            },
+                            {
+                                "name": "k",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 5,
+                        "lineNumber": 48,
+                        "name": "updateNearestReports",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "rescuerLat",
+                                "type": "double"
+                            },
+                            {
+                                "name": "rescuerLon",
+                                "type": "double"
+                            }
+                        ],
+                        "index": 6,
+                        "isCloned": true,
+                        "lineNumber": 48,
+                        "name": "updateNearestReports",
+                        "returnType": "void"
+                    }
+                ],
+                "object": true,
+                "properties": [
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 0,
+                        "lineNumber": 36,
+                        "name": "sortedReports",
+                        "notify": "reportsChanged",
+                        "read": "sortedReports",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QVariantList",
+                        "user": false
+                    }
+                ],
+                "qualifiedClassName": "MapManager",
+                "signals": [
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "path",
+                                "type": "QVariantList"
+                            }
+                        ],
+                        "index": 0,
+                        "lineNumber": 52,
+                        "name": "routeReady",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 1,
+                        "lineNumber": 53,
+                        "name": "reportsChanged",
+                        "returnType": "void"
+                    }
+                ],
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QObject"
+                    }
+                ]
+            }
+        ],
+        "inputFile": "mapmanager.h",
+        "outputRevision": 69
+    },
+    {
+        "classes": [
+            {
+                "className": "RescueReport",
+                "gadget": true,
+                "lineNumber": 8,
+                "properties": [
+                    {
+                        "constant": true,
+                        "designable": true,
+                        "final": false,
+                        "index": 0,
+                        "lineNumber": 12,
+                        "name": "id",
+                        "read": "id",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "int",
+                        "user": false
+                    },
+                    {
+                        "constant": true,
+                        "designable": true,
+                        "final": false,
+                        "index": 1,
+                        "lineNumber": 13,
+                        "name": "coordinate",
+                        "read": "coordinate",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QGeoCoordinate",
+                        "user": false
+                    },
+                    {
+                        "constant": true,
+                        "designable": true,
+                        "final": false,
+                        "index": 2,
+                        "lineNumber": 14,
+                        "name": "priority",
+                        "read": "priority",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "int",
+                        "user": false
+                    }
+                ],
+                "qualifiedClassName": "RescueReport"
+            }
+        ],
+        "inputFile": "rescuereport.h",
+        "outputRevision": 69
+    }
+]

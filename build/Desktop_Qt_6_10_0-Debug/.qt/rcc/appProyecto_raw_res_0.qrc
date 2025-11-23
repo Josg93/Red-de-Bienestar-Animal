@@ -1,0 +1,17 @@
+<RCC>
+  <qresource prefix="/Proyecto/">
+    <file alias="icons/homeIcon.svg">/home/laptop/Escritorio/Proyecto/icons/homeIcon.svg</file>
+    <file alias="icons/notificationIcon.svg">/home/laptop/Escritorio/Proyecto/icons/notificationIcon.svg</file>
+    <file alias="icons/profileIcon.svg">/home/laptop/Escritorio/Proyecto/icons/profileIcon.svg</file>
+    <file alias="icons/reportIcon.svg">/home/laptop/Escritorio/Proyecto/icons/reportIcon.svg</file>
+    <file alias="icons/rescueIcon.svg">/home/laptop/Escritorio/Proyecto/icons/rescueIcon.svg</file>
+    <file alias="icons/lostIcon.svg">/home/laptop/Escritorio/Proyecto/icons/lostIcon.svg</file>
+    <file alias="icons/casesIcon.svg">/home/laptop/Escritorio/Proyecto/icons/casesIcon.svg</file>
+    <file alias="icons/pawIcon.svg">/home/laptop/Escritorio/Proyecto/icons/pawIcon.svg</file>
+    <file alias="icons/dog.svg">/home/laptop/Escritorio/Proyecto/icons/dog.svg</file>
+    <file alias="icons/locationsIcon.svg">/home/laptop/Escritorio/Proyecto/icons/locationsIcon.svg</file>
+    <file alias="icons/filterIcon.svg">/home/laptop/Escritorio/Proyecto/icons/filterIcon.svg</file>
+    <file alias="icons/addIcon.png">/home/laptop/Escritorio/Proyecto/icons/addIcon.png</file>
+  </qresource>
+</RCC>
+
