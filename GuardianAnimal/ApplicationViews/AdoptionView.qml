@@ -51,7 +51,7 @@ Rectangle {
                     }
                     Rectangle {
                         Layout.preferredWidth: 40; Layout.preferredHeight: 40; radius: 10; color: Theme.darkBackgroundColor; border.color: Theme.separatorColor
-                        Image { anchors.centerIn: parent; source: "qrc:/qt/qml/GuardianAnimal/icons/filterIcon3.svg" }
+                        Text { anchors.centerIn: parent; text: "FILTRAR"; font.pixelSize: 11 }
                         MouseArea { anchors.fill: parent; onClicked: filterModal.open() }
                     }
                 }

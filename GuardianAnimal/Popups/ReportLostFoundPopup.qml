@@ -262,7 +262,7 @@ Popup {
                             ColumnLayout {
                                 anchors.centerIn: parent
                                 spacing: 4
-                                Image { source: "qrc:/qt/qml/GuardianAnimal/icons/cameraIcon.svg"}
+                                Text { text: "📷"; font.pixelSize: 24; Layout.alignment: Qt.AlignHCenter }
                                 Text { text: "Añadir"; font.pixelSize: 12; color: Theme.textGray }
                             }
 

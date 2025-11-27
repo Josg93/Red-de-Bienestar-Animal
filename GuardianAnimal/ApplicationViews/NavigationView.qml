@@ -162,7 +162,7 @@ Rectangle {
                 z: 20 // Draw on top of line
                 sourceItem: Column {
                     spacing: -5
-                    Image { source: "qrc:/qt/qml/GuardianAnimal/icons/locationIcon.svg" }
+                    Text { text: "📍"; font.pixelSize: 16 }
                 }
             }
 

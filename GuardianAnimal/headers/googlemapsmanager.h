@@ -26,7 +26,7 @@ private slots:
 
 private:
     QNetworkAccessManager m_networkManager;
-    const QString API_KEY = "API_KEY";
+    const QString API_KEY = "AIzaSyCKwH0K5Dtcedl6ncp7TsPDVgw2-oTE_XY";
 
 
     QList<QGeoCoordinate> decodePolyline(const QString &encodedString);

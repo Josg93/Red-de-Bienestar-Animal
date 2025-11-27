@@ -43,7 +43,7 @@ struct AnimalRecord {
 
     bool isValid() const { return location.isValid(); }
 
-    // --- SERIALIZATION METHODS (NEW) ---
+    // --- SERIALIZATION METHODS  ---
     void read(const QJsonObject &json);
     void write(QJsonObject &json) const;
 };

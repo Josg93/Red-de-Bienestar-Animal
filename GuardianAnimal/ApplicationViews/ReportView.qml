@@ -113,9 +113,10 @@ Rectangle {
                     height: 40
                     radius: 20
                     color: "#fee2e2"
-                    Image {
+                    Text {
                         anchors.centerIn: parent
-                        source: "qrc:/qt/qml/GuardianAnimal/icons/highPriority.svg"
+                        text: "Emergencias"
+                        font.pixelSize: 14
                     }
                 }
 

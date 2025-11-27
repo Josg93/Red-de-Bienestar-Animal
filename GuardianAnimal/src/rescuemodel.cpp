@@ -146,11 +146,10 @@ void RescueModel::updateAdoption(const QString& id,
                                  const QVariantList& imageList,
                                  const QString& shelterName)
 {
-   // qDebug() << "=== UPDATE ADOPTION (DEBUG MODE) ===";
+    // qDebug() << "=== UPDATE ADOPTION ===";
 
     AnimalRecord r = m_system.getAnimal(id);
     if (r.id.isEmpty()) {
-        //qDebug() << "ERROR: Animal not found!";
         return;
     }
 
@@ -164,56 +163,42 @@ void RescueModel::updateAdoption(const QString& id,
     r.contactPhone = contactPhone;
     r.contactEmail = contactEmail;
 
-    -
+    // --- Image Processing ---
     QStringList newImages;
 
     for (const QVariant &img : imageList) {
         QString path;
 
         if (img.canConvert<QUrl>()) {
-            QUrl url = img.toUrl();
-            path = url.toString();
-            qDebug() << "Processing QUrl image path:" << path;
+            path = img.toUrl().toString();
         }
-
         else if (img.metaType().id() == qMetaTypeId<QJSValue>()) {
-            QJSValue js = img.value<QJSValue>();
-            path = js.toString();
-            qDebug() << "Processing QJSValue image path:" << path;
+            path = img.value<QJSValue>().toString();
         }
-
         else {
             path = img.toString();
-            qDebug() << "Processing string image path:" << path;
         }
 
+        // Normalize local file paths
         if (!path.isEmpty()
             && !path.startsWith("file:")
             && !path.startsWith("qrc:")
             && !path.startsWith("http")) {
             path = QUrl::fromLocalFile(path).toString();
-            qDebug() << "  -> Normalized local file path to URL:" << path;
         }
 
         if (!path.isEmpty()) {
             newImages.append(path);
-        } else {
-            qDebug() << "  -> SKIPPED (Empty after processing)";
         }
     }
 
     if (!newImages.isEmpty()) {
-        qDebug() << "Total images actually added:" << newImages.size();
         r.images = newImages;
-    } else {
-        qDebug() << "No valid new images decoded – keeping existing images.";
     }
-
 
     m_system.updateAnimal(r);
     refresh();
 }
-
 
 
 void RescueModel::addLostFound(const QString &status,
@@ -720,6 +705,4 @@ void RescueModel::resolveCase(const QString& id, const QString& outcome)
 }
 
 
-
-/
 
