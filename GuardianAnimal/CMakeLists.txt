@@ -4,7 +4,7 @@ project(GuardianAnimal VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Positioning)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Positioning Location Network Core)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -14,6 +14,35 @@ add_subdirectory(Popups)
 
 qt_add_executable(appGuardianAnimal
     main.cpp
+    src/animalrecord.cpp
+    src/animalroles.cpp
+    src/googlemapsmanager.cpp
+    src/jobticket.cpp
+    src/kdtree.cpp
+    src/maxheap.cpp
+    src/rescuemodel.cpp
+    src/rescuesystem.cpp
+)
+
+target_sources(appGuardianAnimal
+    PRIVATE
+        FILE_SET HEADERS
+        BASE_DIRS ${CMAKE_SOURCE_DIR}/headers
+        FILES
+            headers/animalrecord.h
+            headers/animalroles.h
+            headers/googlemapsmanager.h
+            headers/jobticket.h
+            headers/kdtree.h
+            headers/maxheap.h
+            headers/rescuemodel.h
+            headers/rescuesystem.h
+)
+
+target_include_directories(appGuardianAnimal
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/headers
 )
 
 set_source_files_properties(Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
@@ -28,6 +57,7 @@ qt_add_qml_module(appGuardianAnimal
         Header.qml
         ViewSwitch.qml
         UserSession.qml
+        FloatingActionButton.qml
     RESOURCES
         icons/homeIcon.svg
         icons/notificationIcon.svg
@@ -41,10 +71,22 @@ qt_add_qml_module(appGuardianAnimal
         icons/locationsIcon.svg
         icons/filterIcon.svg
         icons/addIcon.png
-
+        icons/petsHotel.svg
+        icons/petsHotel2.svg
+        icons/calendar.svg
+        icons/warningIcon.svg
+        icons/reports3.svg
+        icons/highPriority.svg
+        icons/mediumPriority.svg
+        icons/lowPriority.svg
+        icons/emailIcon.svg
+        icons/phoneIcon.svg
+        icons/cameraIcon.svg
+        icons/celebrationIcon.svg
+        icons/filterIcon3.svg
+        icons/dogIcon3.svg
+        icons/ambulanceIcon.svg
 )
-
-
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
@@ -61,12 +103,12 @@ target_link_libraries(appGuardianAnimal
     PRIVATE Qt6::Quick
             Qt6::QuickControls2
             Qt6::Positioning
+            Qt6::Location
+            Qt6::Network
+            Qt6::Core
             ApplicationViewsLibplugin
             PopupsLibplugin
             StartLibplugin
-
-
-
 )
 
 include(GNUInstallDirs)

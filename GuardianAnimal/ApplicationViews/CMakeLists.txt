@@ -9,13 +9,16 @@ target_link_libraries(${LIB_NAME} PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Po
 qt_add_qml_module(${LIB_NAME}
     URI ${MODULE_NAME}
     # VERSION 1.0
-    RESOURCE_PREFIX /
+    # RESOURCE_PREFIX /
     QML_FILES
         LostFoundView.qml
         AdoptionView.qml
         PetDetailView.qml
         RescueListView.qml
-	ReportView.qml
+        ReportView.qml
+        HistoryView.qml
+        HappyTailsView.qml
+        ReunitedView.qml
 	NavigationView.qml
 	DashboardView.qml
 	PetImageGallery.qml

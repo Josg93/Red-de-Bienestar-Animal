@@ -33,7 +33,6 @@ Rectangle {
             }
         }
 
-        // Fields
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 15
@@ -51,7 +50,7 @@ Rectangle {
                 id: emailField
                 Layout.fillWidth: true
                 placeholderText: "Correo Electrónico"
-                iconText: "✉️"
+                //iconText: "✉️"
                 inputMethodHints: Qt.ImhEmailCharactersOnly
             }
 
@@ -59,8 +58,7 @@ Rectangle {
                 id: passField
                 Layout.fillWidth: true
                 placeholderText: "Contraseña"
-                iconText: "🔒"
-                // Mask the password
+                //iconText: "🔒"
                 text: innerField.echoMode = TextInput.Password
             }
         }
@@ -85,18 +83,15 @@ Rectangle {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            // ... inside your Button onClicked ...
             onClicked: {
                 if (emailField.text !== "" && passField.text !== "") {
-                    var name = root.isRegistering ? nameField.text : "Usuario Demo" // Use input or default
+                    var name = root.isRegistering ? nameField.text : "Usuario"
 
-                    // 1. LOGIN TO SESSION
                     UserSession.login(name, emailField.text)
 
-                    // 2. NOTIFY APP
+                    backend.setCurrentUserId(UserSession.userId)
+
                     root.loginSuccess(name)
-                } else {
-                    console.log("Fill fields")
                 }
             }
         }
@@ -115,8 +110,6 @@ Rectangle {
         }
     }
 
-    // Helper Component (Reuse the one from ReportView/AddPet if you made it a separate file,
-    // otherwise define it here again to be safe)
     component StyledTextField: Rectangle {
         id: tfRoot
         property alias text: inner.text

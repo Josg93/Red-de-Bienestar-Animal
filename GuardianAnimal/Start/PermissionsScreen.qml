@@ -1,6 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
+import ApplicationViews
+import Popups
+import Start
 import GuardianAnimal
 
 Rectangle {
@@ -20,7 +23,7 @@ Rectangle {
 
         // Icon
         Text {
-            text: "📍"
+            text: "📍" //CAMBIAR ICONO
             font.pixelSize: 60
             Layout.alignment: Qt.AlignHCenter
         }
@@ -78,3 +81,4 @@ Rectangle {
         Item { Layout.fillHeight: true } // Spacer Bottom
     }
 }
+

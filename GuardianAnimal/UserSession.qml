@@ -12,6 +12,7 @@ QtObject {
 
     // Helper to simulate logging in
     function login(name, email) {
+
         // In a real app, this data comes from the backend/database
         // We simulate a unique ID based on the email
         root.userId = email.replace(/[^a-zA-Z0-9]/g, "") // Simple ID generation

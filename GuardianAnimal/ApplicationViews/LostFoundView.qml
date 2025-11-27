@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
+import QtQuick.Effects
 import ApplicationViews
 import Popups
 import Start
@@ -10,40 +11,13 @@ Rectangle {
     id: root
     color: Theme.backgroundColor
 
-    property string currentTab: "lost" // "lost" or "found"
-
+    property string currentTab: "lost"
     property string currentUserId: UserSession.userId
 
-    // DATA MODELS
-    ListModel {
-        id: lostModel
+    signal openLostFoundDetail(var petData)
+    signal openReunitedView()
 
-        //NEED TO DELETE THIS CASES
-        // Case 1: Created by (user_123). I can close this.
-        ListElement {
-            name: "Coco"; type: "Gato"; breed: "Persa"; location: "La Humboldt"; distance: "1.2 km"
-            status: "lost"; date: "Hace 2 horas";
-            ownerId: "user123"; contact: "0414-555-5555"
-            imagesJson: "[]"; imageSource: ""; color1: "#fecaca"
-        }
-        // Case 2: Created by STRANGER (user_999). I can only contact them.
-        ListElement {
-            name: "Rocky"; type: "Perro"; breed: "Labrador"; location: "Av. Las Américas"; distance: "5.0 km"
-            status: "lost"; date: "Ayer";
-            ownerId: "user_999"; contact: "0424-123-4567"
-            imagesJson: "[]"; imageSource: ""; color1: "#fecaca"
-        }
-    }
-
-    ListModel {
-        id: foundModel
-        ListElement {
-            name: "Sin Collar"; type: "Perro"; breed: "Husky"; location: "Av. Universidad"; distance: "0.5 km"
-            status: "found"; date: "Hoy, 8:00 AM";
-            ownerId: "user_999"; contact: "0416-987-6543"
-            imagesJson: "[]"; imageSource: ""; color1: "#d1fae5"
-        }
-    }
+    onVisibleChanged: if (visible) backend.setViewMode(currentTab)
 
     ColumnLayout {
         anchors.fill: parent
@@ -51,202 +25,417 @@ Rectangle {
 
         // HEADER
         Rectangle {
-            Layout.fillWidth: true; height: 130; color: Theme.backgroundColor; z: 10
+            Layout.fillWidth: true
+            height: 120
+            color: Theme.backgroundColor
+            z: 10
+
             ColumnLayout {
-                anchors.fill: parent; anchors.margins: 16; spacing: 10
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 10
 
-                Text { text: "Perdidos y Encontrados"; font.pixelSize: Theme.largeFontSize + 2; font.bold: true; color: Theme.textDark }
+                Text {
+                    text: "Perdidos y Encontrados"
+                    font.pixelSize: 22
+                    font.bold: true
+                    color: Theme.textDark
+                }
 
-                // Search & Filter
+                // Search + Filter
                 RowLayout {
-                    Layout.fillWidth: true; spacing: 10
+                    Layout.fillWidth: true
+                    spacing: 10
+
                     Rectangle {
-                        Layout.fillWidth: true; Layout.preferredHeight: 40; color: Theme.bgWhite; radius: 10; border.color: "#e5e7eb"; border.width: 1
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        color: Theme.bgWhite
+                        radius: 10
+                        border.color: "#e5e7eb"
+                        border.width: 1
+
                         RowLayout {
-                            anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 10; spacing: 8
-                            Text { text: "🔍"; font.pixelSize: 14 }
+                            anchors.fill: parent
+                            anchors.margins: 10
+
+                            Image { source: "qrc:/qt/qml/GuardianAnimal/icons/lostIcon.svg"}
+
                             TextField {
-                                id: searchInput; Layout.fillWidth: true; placeholderText: "Buscar ID, raza, lugar..."; font.pixelSize: 14
-                                background: null; color: Theme.textDark
+                                id: searchInput
+                                Layout.fillWidth: true
+                                placeholderText: "Buscar..."
+                                font.pixelSize: 14
+                                background: null
+                                color: Theme.textDark
+                                onTextChanged: backend.setSearchQuery(text)
                             }
-                            Text { text: "✕"; color: Theme.textGray; visible: searchInput.text !== ""; MouseArea { anchors.fill: parent; onClicked: searchInput.text="" } }
+
+                            Text {
+                                text: "✕"
+                                color: Theme.textGray
+                                visible: searchInput.text !== ""
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        searchInput.text = ""
+                                        backend.setSearchQuery("")
+                                    }
+                                }
+                            }
                         }
                     }
+
+                    // Reuse AdoptionFilter
                     Rectangle {
-                        Layout.preferredWidth: 40; Layout.preferredHeight: 40; radius: 10; color: Theme.darkBackgroundColor; border.color: Theme.separatorColor
-                        Text { anchors.centerIn: parent; text: "Filtro" }
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
+                        radius: 10
+                        color: Theme.darkBackgroundColor
+                        border.color: Theme.separatorColor
+                        Image {
+                            anchors.centerIn: parent
+                            source: "qrc:/qt/qml/GuardianAnimal/icons/filterIcon3.svg"
+                        }
                         MouseArea { anchors.fill: parent; onClicked: filterModal.open() }
                     }
                 }
 
                 // Tabs
                 Rectangle {
-                    Layout.fillWidth: true; height: 36; radius: 10; color: "#e5e7eb"
+                    Layout.fillWidth: true
+                    height: 36
+                    radius: 10
+                    color: "#e5e7eb"
+
                     RowLayout {
-                        anchors.fill: parent; anchors.margins: 3; spacing: 4
+                        anchors.fill: parent
+                        anchors.margins: 3
+                        spacing: 4
+
+                        // LOST TAB
                         Rectangle {
-                            Layout.fillWidth: true; Layout.fillHeight: true; radius: 8
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: 8
                             color: root.currentTab === "lost" ? Theme.bgWhite : "transparent"
-                            Text { anchors.centerIn: parent; text: "PERDIDOS"; font.bold: true; font.pixelSize: 11; color: root.currentTab === "lost" ? "#dc2626" : Theme.textGray }
-                            MouseArea { anchors.fill: parent; onClicked: root.currentTab = "lost" }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "PERDIDOS"
+                                font.bold: true
+                                font.pixelSize: 11
+                                color: root.currentTab === "lost" ? "#dc2626" : Theme.textGray
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    if (root.currentTab !== "lost") {
+                                        root.currentTab = "lost"
+                                        backend.setViewMode("lost")
+                                    }
+                                }
+                            }
                         }
+
+                        // FOUND TAB
                         Rectangle {
-                            Layout.fillWidth: true; Layout.fillHeight: true; radius: 8
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: 8
                             color: root.currentTab === "found" ? Theme.bgWhite : "transparent"
-                            Text { anchors.centerIn: parent; text: "ENCONTRADOS"; font.bold: true; font.pixelSize: 11; color: root.currentTab === "found" ? "#059669" : Theme.textGray }
-                            MouseArea { anchors.fill: parent; onClicked: root.currentTab = "found" }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "VISTOS / ENCONTRADOS"
+                                font.bold: true
+                                font.pixelSize: 11
+                                color: root.currentTab === "found" ? "#2563eb" : Theme.textGray
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    if (root.currentTab !== "found") {
+                                        root.currentTab = "found"
+                                        backend.setViewMode("found")
+                                    }
+                                }
+                            }
                         }
                     }
-
                 }
             }
         }
 
-        Item { height:20 } //spacer
+        // GRID VIEW
+        GridView {
+            id: gridView
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            Layout.topMargin: 10
+            clip: true
 
-        // LIST VIEW
-        ListView {
-            id: listView
-            Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 15
-            model: root.currentTab === "lost" ? lostModel : foundModel
+            cellWidth: width / 2
+            cellHeight: 290
+
+            model: backend
 
             delegate: Rectangle {
                 id: cardDelegate
-                width: listView.width - 32;
-                height: 130
-                anchors.horizontalCenter: parent.horizontalCenter
-                radius: 12; color: Theme.bgWhite; border.color: "#e5e7eb"; border.width: 1
+                width: gridView.cellWidth - 10
+                height: gridView.cellHeight - 10
+                radius: 14
+                color: Theme.bgWhite
+                border.color: "#e5e7eb"
+                border.width: 1
+                clip: true
 
-                // Search Logic
-                visible: searchInput.text === "" || model.name.toLowerCase().includes(searchInput.text.toLowerCase())
-                opacity: visible ? 1.0 : 0.0
+                property bool isMine: (model.ownerId === backend.currentUserId)
 
-                // Status Strip
-                Rectangle { width: 4; height: parent.height; anchors.left: parent.left; radius: 2; color: model.status === "lost" ? "#dc2626" : "#059669" }
+                // CARD CLICK → DETAIL
+                MouseArea {
+                    anchors.fill: parent
+                    propagateComposedEvents: true
+                    z: -1
+                    onClicked: {
+                        root.openLostFoundDetail({
+                            id: model.id,
+                            name: model.name,
+                            type: model.type,
+                            age: model.age || "Fecha: " + Qt.formatDateTime(model.timestamp, "dd/MM"),
+                            location: model.location,
+                            description: model.description,
+                            images: model.images,
+                            imageSource: model.imageSource,
+                            status: model.status,
+                            contactPhone: model.contactPhone
+                        })
+                    }
+                }
 
-                RowLayout {
-                    anchors.fill: parent; anchors.margins: 10; anchors.leftMargin: 16; spacing: 12
-                    visible: cardDelegate.visible
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 0
 
-                    // GALLERY
-                    Rectangle {
-                        Layout.preferredWidth: 100; Layout.fillHeight: true; radius: 8; clip: true
+                    // IMAGE
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 150
+                        clip: true
+
                         PetImageGallery {
                             anchors.fill: parent
-                            imageList: {
-                                if (model.imagesJson && model.imagesJson !== "") {
-                                    try { return JSON.parse(model.imagesJson) } catch(e) {}
-                                }
-                                if (model.imageSource && model.imageSource !== "") return [model.imageSource]
-                                return []
+                            imageList: model.images
+                            placeholderIcon: model.status === "lost" ? "🐕?" : "👀"
+                        }
+
+                        // STATUS BADGE
+                        Rectangle {
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 8
+                            height: 24
+                            width: statusText.implicitWidth + 16
+                            radius: 12
+                            color: model.status === "lost" ? "#fee2e2" : "#dbeafe"
+
+                            Text {
+                                id: statusText
+                                anchors.centerIn: parent
+                                text: model.status === "lost" ? "PERDIDO" : "VISTO"
+                                font.bold: true
+                                font.pixelSize: 10
+                                color: model.status === "lost" ? "#dc2626" : "#1e40af"
                             }
-                            placeholderIcon: model.status === "lost" ? "🔍" : "🏠"
-                            fallbackColors: model.status === "lost" ? ["#fee2e2", "#fecaca"] : ["#d1fae5", "#a7f3d0"]
+                        }
+
+                        // MINE BADGE
+                        Rectangle {
+                            visible: cardDelegate.isMine
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.margins: 8
+                            height: 20
+                            width: 40
+                            radius: 4
+                            color: "black"
+                            Text {
+                                anchors.centerIn: parent
+                                text: "YO"
+                                color: "white"
+                                font.bold: true
+                                font.pixelSize: 10
+                            }
                         }
                     }
 
-                    // INFO & ACTIONS
+                    // TEXT CONTENT
                     ColumnLayout {
-                        Layout.fillWidth: true; spacing: 4
+                        Layout.fillWidth: true
+                        Layout.margins: 10
+                        spacing: 4
 
-                        // Top Row: Badge + "Mine" indicator
-                        RowLayout {
+                        Text {
+                            text: model.name
+                            font.bold: true
+                            font.pixelSize: 16
+                            color: Theme.textDark
+                            elide: Text.ElideRight
                             Layout.fillWidth: true
-                            Rectangle {
-                                width: badgeText.width + 12; height: 20; radius: 4; color: model.status === "lost" ? "#fee2e2" : "#d1fae5"
-                                Text { id: badgeText; anchors.centerIn: parent; font.pixelSize: 9; font.bold: true; text: model.status === "lost" ? "PERDIDO" : "ENCONTRADO"; color: model.status === "lost" ? "#dc2626" : "#059669" }
-                            }
-                            // "Mine" Indicator
-                            Rectangle {
-                                visible: model.ownerId === currentUserId
-                                width: 36; height: 20; radius: 4; color: Theme.textDark
-                                Text { anchors.centerIn: parent; text: "MIO"; font.pixelSize: 9; font.bold: true; color: "white" }
-                            }
                         }
 
-                        Text { text: model.name; font.bold: true; font.pixelSize: 16; color: Theme.textDark }
-                        Text { text: model.breed + " • " + model.date; font.pixelSize: 11; color: Theme.textGray }
+                        Text {
+                            text: (model.breed ? model.breed : "Sin raza") +
+                                  " • " + Qt.formatDateTime(model.timestamp, "dd MMM")
+                            font.pixelSize: 11
+                            color: Theme.textGray
+                        }
+
+                        Text {
+                            text: "📍 " + model.location
+                            font.pixelSize: 11
+                            color: Theme.textGray
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+
                         Item { Layout.fillHeight: true }
 
-                        // --- SMART ACTION BUTTONS ---
-                        RowLayout {
+                        // ACTION BUTTON
+                        Button {
                             Layout.fillWidth: true
-                            Text { text: "📍 " + model.distance; font.pixelSize: 11; font.bold: true; color: "#4f46e5" }
-                            Item { Layout.fillWidth: true }
+                            Layout.preferredHeight: 36
 
-                            // BUTTON A: I am the Owner -> "Close Case"
-                            Button {
-                                visible: model.ownerId === root.currentUserId
-                                Layout.preferredHeight: 30
-                                background: Rectangle { radius: 15; color: "#dcfce7" } // Green tint
-                                contentItem: Text {
-                                    text: model.status === "lost" ? "✅ Ya lo encontré" : "✅ Entregado"
-                                    font.pixelSize: 11; font.bold: true; color: "#15803d"
-                                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                            background: Rectangle {
+                                radius: 8
+                                color: cardDelegate.isMine
+                                       ? "#dcfce7"
+                                       : (model.status === "lost" ? "#fee2e2" : "#dbeafe")
+                                border.color: cardDelegate.isMine ? "#16a34a" : "transparent"
+                                border.width: cardDelegate.isMine ? 1 : 0
+                            }
+
+                            contentItem: RowLayout {
+                                anchors.centerIn: parent // Center the whole row (icon + text)
+                                spacing: 6 // Space between icon and text
+
+                                // 1. Icon (Only visible if NOT yours)
+                                Image {
+                                    visible: !cardDelegate.isMine
+                                    source: "qrc:/qt/qml/GuardianAnimal/icons/phoneIcon.svg" // Using an existing general contact icon
+                                    width: 14; height: 14 // Small size for inline icon
+
+                                    // Tint the SVG to match the text color dynamically
+                                    layer.enabled: true
+                                    layer.effect: MultiEffect {
+                                        colorization: 1.0
+                                        colorizationColor: model.status === "lost" ? "#dc2626" : "#1e40af"
+                                    }
                                 }
-                                onClicked: {
-                                    // Logic: Remove from active list (Simulating "Moving to History")
-                                    if (root.currentTab === "lost") lostModel.remove(index)
-                                    else foundModel.remove(index)
-                                    console.log("Case resolved!")
+
+                                // 2. Text Label
+                                Text {
+                                    // Text remains clean (no emoji)
+                                    text: cardDelegate.isMine ? "✓ Ya en casa" : "Contactar"
+
+                                    color: cardDelegate.isMine
+                                           ? "#16a34a"
+                                           : (model.status === "lost" ? "#dc2626" : "#1e40af")
+
+                                    font.bold: true
+                                    font.pixelSize: 12
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
 
-                            // BUTTON B: I am Stranger -> "Contact Owner"
-                            Button {
-                                visible: model.ownerId !== root.currentUserId
-                                Layout.preferredHeight: 30
-                                background: Rectangle { radius: 15; color: "#dbeafe" } // Blue tint
-                                contentItem: Text {
-                                    text: model.status === "lost" ? "👁️ Lo vi / Contactar" : "🤔 Es mío"
-                                    font.pixelSize: 11; font.bold: true; color: "#1e40af"
-                                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                                }
-                                onClicked: {
-                                    console.log("Calling " + model.contact)
-                                    // In real app: Qt.openUrlExternally("tel:" + model.contact)
+                            onClicked: {
+                                if (cardDelegate.isMine) {
+                                    backend.resolveCase(model.id, "Reunido en Casa")
+                                } else if (model.contactPhone) {
+                                    Qt.openUrlExternally("tel:" + model.contactPhone)
                                 }
                             }
                         }
+
+
                     }
                 }
             }
         }
-    }
 
-    // REPORT BUTTON POPUP
-    Button {
-        width: 56; height: 56; anchors.bottom: parent.bottom; anchors.right: parent.right; anchors.margins: 20; z: 50
-        background: Rectangle { radius: 28; color: root.currentTab === "lost" ? "#dc2626" : "#059669" }
-        contentItem: Text { text: "+"; font.pixelSize: 30; color: "white"; anchors.centerIn: parent; anchors.verticalCenterOffset: -2 }
-        onClicked: reportPopup.open()
-    }
-
-    // REPORT POPUP
-    ReportLostFoundPopup {
-        id: reportPopup
-        onReportAdded: (status, name, type, breed, date, location, contact, images) => {
-            var jsonImages = JSON.stringify(images)
-            var mainImage = images.length > 0 ? images[0].toString() : ""
-
-            var newReport = {
-                "name": name === "" ? "Desconocido" : name,
-                "type": type, "breed": breed, "location": location, "date": date,
-                "distance": "0.1 km", "status": status, "contact": contact,
-
-                // ASSIGN OWNERSHIP AUTOMATICALLY
-                "ownerId": root.currentUserId,
-
-                "imagesJson": jsonImages, "imageSource": mainImage,
-                "color1": status === "lost" ? "#fecaca" : "#d1fae5"
+        // FOOTER → Reunited history
+        Rectangle {
+            Layout.fillWidth: true
+            height: 50
+            color: "white"
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#e5e7eb"
+                anchors.top: parent.top
             }
 
-            if (status === "lost") lostModel.insert(0, newReport)
-            else foundModel.insert(0, newReport)
+            RowLayout {
+                anchors.centerIn: parent
+                spacing: 6
+                Text { text: "🏠 Ver casos reunidos"; font.bold: true; color: Theme.brandPink }
+                Text { text: "→"; font.bold: true; color: Theme.brandPink }
+            }
 
-            root.currentTab = status
+            MouseArea { anchors.fill: parent; onClicked: root.openReunitedView() }
         }
     }
 
-    AdoptionFilter { id: filterModal }
+    // FAB (Dynamic Color)
+        FloatingActionButton {
+            anchors.bottom: parent.bottom; anchors.right: parent.right
+            anchors.margins: 20
+            anchors.bottomMargin: 70 // Keep it lifted above the footer
+
+            // Change color based on the active tab
+            buttonColor: root.currentTab === "lost" ? "#dc2626" : "#2563eb"
+
+            onClicked: {
+                reportPopup.reportType = root.currentTab
+                reportPopup.open()
+            }
+        }
+
+    // POPUP
+    ReportLostFoundPopup {
+        id: reportPopup
+
+        onReportAdded: function(status, name, type, breed, date, location, contact, images) {
+            var cleanType = type.replace(/[^\w\s]/gi, "").trim()
+            backend.addLostFound(
+                        status,
+                        name || "Desconocido",
+                        cleanType,
+                        breed,
+                        date,
+                        location,
+                        contact,
+                        images)
+            root.currentTab = status
+            backend.setViewMode(status)
+        }
+    }
+
+    // FILTER
+    AdoptionFilter {
+        id: filterModal
+        onFiltersApplied: {
+            var km = (filterModal.currentRadius === "Todo")
+                     ? 500
+                     : parseInt(filterModal.currentRadius)
+            backend.setSearchRadius(km)
+            backend.setSpeciesFilter(filterModal.currentSpecies)
+            backend.setFilterByRadius(filterModal.currentRadius !== "Todo")
+        }
+    }
 }

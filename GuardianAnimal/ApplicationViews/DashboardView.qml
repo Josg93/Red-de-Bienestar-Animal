@@ -11,8 +11,6 @@ Flickable {
     contentHeight: contentColumn.height + 40
     clip: true
 
-    // Signal to tell ApplicationScreen to switch tabs
-    // 1 = Adoptions, 2 = Rescue Cases, 3 = Lost & Found
     signal requestView(int index)
 
     ColumnLayout {
@@ -24,7 +22,7 @@ Flickable {
 
         Item { width: 1; height: 10 }
 
-        // 1. FINISH CUSTOM DIALOG
+        // APP EXPLANATION
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 200
@@ -33,7 +31,7 @@ Flickable {
             color: Theme.textDark
             radius: 16
 
-            // Decorative gradient overlay
+            // Decorative gradient
             Rectangle {
                 anchors.fill: parent
                 radius: 16
@@ -58,13 +56,6 @@ Flickable {
                         color: "white"
                     }
                     Item { Layout.fillWidth: true }
-
-                    /*
-                    Rectangle {
-                        width: 60; height: 22; radius: 4
-                        color: "#22c55e" // Green "ONLINE" badge
-                        Text { anchors.centerIn: parent; text: "ONLINE"; font.bold: true; font.pixelSize: 10; color: "white" }
-                    }*/
                 }
 
                 Text {
@@ -90,7 +81,7 @@ Flickable {
 
         Item { Layout.fillHeight: true } // Spacer
 
-        // 2. "Acciones Rápidas" Section Title
+        // 2. "FAST ACTIONS"
         Text {
             text: "ACCIONES RÁPIDAS"
             font.bold: true
@@ -100,7 +91,7 @@ Flickable {
             font.letterSpacing: 0.5
         }
 
-        // 3. GRID OF CARDS from the prototype i did before
+        // 3. GRID OF CARDS OPTIONS
         GridLayout {
             Layout.fillWidth: true
             Layout.leftMargin: 16
@@ -111,7 +102,6 @@ Flickable {
 
             Repeater {
                 model: [
-                    // NEED TO FIX INDEXES
                     {"name": "Emergencias", "icon": "qrc:/qt/qml/GuardianAnimal/icons/notificationIcon.svg", "bgColor": "#fee2e2", "iconColor": "#dc2626", "targetIndex": 2},
                     {"name": "Adopciones",  "icon": "qrc:/qt/qml/GuardianAnimal/icons/homeIcon.svg",         "bgColor": "#fce7f3", "iconColor": "#db2777", "targetIndex": 1},
                     {"name": "Perdidos",    "icon": "qrc:/qt/qml/GuardianAnimal/icons/lostIcon.svg",         "bgColor": "#e0e7ff", "iconColor": "#4f46e5", "targetIndex": 3},
@@ -127,14 +117,12 @@ Flickable {
                     border.width: 2
                     layer.enabled: true
 
-                    // Helper for icon path I NEED TO DELETE THIS AFTER ALL ICONS ARE IMPORTED
                     property bool isImagePath: modelData.icon.toString().indexOf("/") >= 0
 
                     ColumnLayout {
                         anchors.centerIn: parent
                         spacing: 8
 
-                        // Colored Circle Background
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                             width: 48
@@ -148,7 +136,7 @@ Flickable {
                                 visible: parent.parent.parent.isImagePath
                                 display: AbstractButton.IconOnly
                                 background: null
-                                enabled: false // Pass clicks to main MouseArea
+                                enabled: false
 
                                 icon.source: visible ? modelData.icon : ""
                                 icon.color: modelData.iconColor
@@ -179,7 +167,6 @@ Flickable {
                         id: mouseArea
                         anchors.fill: parent
                         onClicked: {
-                            console.log("Navigating to index: " + modelData.targetIndex)
                             root.requestView(modelData.targetIndex)
                         }
                     }

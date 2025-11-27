@@ -1,12 +1,12 @@
-// Main.qml
 pragma ComponentBehavior: Bound
 import QtCore
 import QtQuick
 import QtQuick.Window
-//import SatelliteInformation
 import ApplicationViews
 import Popups
 import Start
+import GuardianAnimal
+
 
 Window {
     id: root
@@ -99,3 +99,4 @@ Window {
         }
     }
 }
+

@@ -2,21 +2,127 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import QtQuick.Dialogs
+import ApplicationViews
+import Popups
+import Start
 import GuardianAnimal
 
 Popup {
     id: root
 
-    // SIGNAL UPDATE: 'images' is now an array of strings
     signal petAdded(
         string name,
         string type,
-        string ageVal, string ageUnit,
-        string sex, bool isSpayed,
-        string location,
-        string address, string email, string phone,
-        var images // array of strings (var)
+        string ageVal,
+        string ageUnit,
+        string sex,
+        bool isSpayed,
+        string shelterName,
+        string description,
+        string phone,
+        string email,
+        var images
     )
+
+    signal petUpdated(
+        string id,
+        string name,
+        string type,
+        string age,
+        string shelterName,
+        string description,
+        string phone,
+        string email,
+        var images
+    )
+
+    property bool isEditMode: false
+    property string editId: ""
+    property var selectedImages: []
+
+    // form validations: name + shelter + phone required; email optional-but-valid.
+    readonly property bool isFormValid: {
+        // During component construction, these ids are not ready yet
+        if (typeof nameField === "undefined" ||
+            typeof shelterNameField === "undefined" ||
+            typeof phoneField === "undefined" ||
+            typeof emailField === "undefined") {
+            return false
+        }
+
+        return nameField.text.trim() !== "" &&
+               shelterNameField.text.trim() !== "" &&
+               phoneField.text.trim() !== "" && phoneField.acceptableInput &&
+               (emailField.text.trim() === "" || emailField.acceptableInput)
+    }
+
+
+
+    function openForAdd() {
+        isEditMode = false
+        editId = ""
+        nameField.text = ""
+        ageField.text = ""
+        shelterNameField.text = ""
+        descField.text = ""
+        phoneField.text = ""
+        emailField.text = ""
+        root.selectedImages = []
+        spayedCheck.checked = false
+        typeCombo.currentIndex = 0
+        sexCombo.currentIndex = 0
+        ageUnitCombo.currentIndex = 0
+        root.open()
+    }
+
+    function openForEdit(data) {
+        isEditMode = true
+        editId = data.id || ""
+        nameField.text = data.name || ""
+
+        // Restore age number + unit
+        ageField.text = ""
+        ageUnitCombo.currentIndex = 0
+        if (data.age) {
+            var parts = data.age.split(" ")
+            ageField.text = parts[0] || ""
+            var unit = parts[1] || ""
+            var unitIndex = ageUnitCombo.model.indexOf(unit)
+            if (unitIndex >= 0)
+                ageUnitCombo.currentIndex = unitIndex
+        }
+
+        shelterNameField.text = data.location || ""
+        descField.text = data.description || ""
+
+        // Restore TYPE combobox ("Perro"/"Gato"/"Otro" against ["🐕 Perro", ...])
+        typeCombo.currentIndex = 0
+        if (data.type) {
+            for (var i = 0; i < typeCombo.model.length; ++i) {
+                var entry = typeCombo.model[i].toString()
+                if (entry.indexOf(data.type) !== -1) {
+                    typeCombo.currentIndex = i
+                    break
+                }
+            }
+        }
+
+        // Contact info (if already provided from getAnimalDetails)
+        phoneField.text = data.contactPhone || ""
+        emailField.text = data.contactEmail || ""
+
+        // Load existing images array
+        if (data.images && data.images.length > 0) {
+            root.selectedImages = data.images
+        } else if (data.imageSource && data.imageSource !== "") {
+            root.selectedImages = [data.imageSource]
+        } else {
+            root.selectedImages = []
+        }
+
+        console.log("Edit mode - loaded", root.selectedImages.length, "images")
+        root.open()
+    }
 
     parent: Overlay.overlay
     x: Math.round((parent.width - width) / 2)
@@ -27,35 +133,25 @@ Popup {
     focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
-    // INTERNAL STATE: Array of selected image paths
-    property var selectedImages: []
-
-    readonly property bool isFormValid:
-        nameField.text.trim() !== "" &&
-        ageField.text.trim() !== "" &&
-        locField.text.trim() !== "" &&
-        addressField.text.trim() !== "" &&
-        emailField.text.trim() !== "" &&
-        phoneField.text.trim() !== ""
-
     background: Rectangle {
-        color: Theme.bgWhite; radius: 16; border.color: Theme.separatorColor; border.width: 1
+        color: Theme.bgWhite
+        radius: 16
+        border.color: Theme.separatorColor
+        border.width: 1
     }
 
     FileDialog {
         id: fileDialog
         title: "Seleccionar fotos"
-        // ENABLE MULTIPLE SELECTION
         fileMode: FileDialog.OpenFiles
         nameFilters: ["Image files (*.jpg *.png *.jpeg *.heic)"]
         onAccepted: {
-            // Append new files to existing array
-            // We create a new array reference to trigger QML bindings updates
             var current = root.selectedImages
             for (var i = 0; i < selectedFiles.length; i++) {
                 current.push(selectedFiles[i].toString())
             }
-            root.selectedImages = [].concat(current) // Force update
+            root.selectedImages = [].concat(current)
+            console.log("Added images, total:", root.selectedImages.length)
         }
     }
 
@@ -71,67 +167,170 @@ Popup {
             width: parent.width
             spacing: 16
 
-            // --- HEADER ---
+            // HEADER
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
-                Rectangle { width: 40; height: 40; radius: 20; color: "#fce7f3"; Text { anchors.centerIn: parent; text: "🐾"; font.pixelSize: 20 } }
-                ColumnLayout { spacing: 2; Text { text: "Nuevo Ingreso"; font.bold: true; font.pixelSize: 20; color: Theme.textDark } Text { text: "Completa la información"; font.pixelSize: 13; color: Theme.textGray } }
-                Item { Layout.fillWidth: true }
-                Text { text: "✕"; font.pixelSize: 24; color: Theme.textGray; MouseArea { anchors.fill: parent; onClicked: root.close() } }
-            }
-
-            // --- INFO FIELDS ---
-            ColumnLayout {
-                Layout.fillWidth: true; spacing: 12
-                Text { text: "INFORMACIÓN BÁSICA"; font.bold: true; font.pixelSize: 11; color: Theme.textGray; font.letterSpacing: 0.5 }
-                StyledTextField { id: nameField; Layout.fillWidth: true; placeholderText: "Nombre de la mascota *"; iconText: "🏷️" }
-                RowLayout {
-                    Layout.fillWidth: true; spacing: 12
-                    StyledComboBox { id: typeCombo; Layout.fillWidth: true; model: ["🐕 Perro", "🐈 Gato", "🦜 Otro"] }
-                    StyledComboBox { id: sexCombo; Layout.fillWidth: true; model: ["♂ Macho", "♀ Hembra"] }
-                }
-                RowLayout {
-                    Layout.fillWidth: true; spacing: 12
-                    StyledTextField { id: ageField; Layout.fillWidth: true; Layout.preferredWidth: 1; placeholderText: "Edad *"; inputMethodHints: Qt.ImhDigitsOnly }
-                    StyledComboBox { id: ageUnitCombo; Layout.fillWidth: true; Layout.preferredWidth: 2; model: ["Años", "Meses", "Semanas"] }
-                }
-                // Spayed Checkbox
                 Rectangle {
-                    Layout.fillWidth: true; height: 50; radius: 10; color: spayedCheck.checked ? "#fce7f3" : "#f9fafb"; border.color: spayedCheck.checked ? Theme.brandPink : "#e5e7eb"; border.width: 2
-                    RowLayout {
-                        anchors.fill: parent; anchors.leftMargin: 16; anchors.rightMargin: 16; spacing: 12
-                        Text { text: "✓"; font.pixelSize: 18; color: Theme.brandPink }
-                        CheckBox { id: spayedCheck; text: "Esterilizado / Castrado"; font.pixelSize: 14; Layout.fillWidth: true; indicator: Rectangle { implicitWidth: 22; implicitHeight: 22; x: spayedCheck.leftPadding; y: parent.height/2-height/2; radius: 4; border.color: spayedCheck.checked ? Theme.brandPink : "#d1d5db"; border.width: 2; color: spayedCheck.checked ? Theme.brandPink : "transparent"; Text { anchors.centerIn: parent; text: "✓"; color: "white"; font.pixelSize: 14; font.bold: true; visible: spayedCheck.checked } } }
+                    width: 40; height: 40; radius: 20
+                    color: "#fce7f3"
+                    Text { anchors.centerIn: parent; text: root.isEditMode ? "✎" : "🐾"; font.pixelSize: 20 }
+                }
+                ColumnLayout {
+                    spacing: 2
+                    Text {
+                        text: root.isEditMode ? "Editar Perfil" : "Nuevo Ingreso"
+                        font.bold: true; font.pixelSize: 20; color: Theme.textDark
+                    }
+                    Text {
+                        text: root.isEditMode ? "Modificar datos existentes" : "Completa la información"
+                        font.pixelSize: 13; color: Theme.textGray
                     }
                 }
-                Rectangle {
-                    Layout.fillWidth: true; Layout.preferredHeight: 90; radius: 10; border.color: descField.activeFocus ? Theme.brandPink : "#e5e7eb"; border.width: 2; color: "#f9fafb"
-                    TextArea { id: descField; placeholderText: "Descripción: Historia, temperamento..."; wrapMode: TextArea.Wrap; font.pixelSize: 14; color: Theme.textDark; background: null; anchors.fill: parent; anchors.margins: 10 }
+                Item { Layout.fillWidth: true }
+                Text {
+                    text: "✕"; font.pixelSize: 24; color: Theme.textGray
+                    MouseArea { anchors.fill: parent; onClicked: root.close() }
                 }
             }
 
-            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.separatorColor; Layout.margins: 8 }
-
-            // --- CONTACT INFO ---
+            // FIELDS
             ColumnLayout {
-                Layout.fillWidth: true; spacing: 12
-                Text { text: "UBICACIÓN Y CONTACTO"; font.bold: true; font.pixelSize: 11; color: Theme.textGray; font.letterSpacing: 0.5 }
-                StyledTextField { id: locField; Layout.fillWidth: true; placeholderText: "Nombre del lugar / refugio *"; iconText: "📍" }
-                StyledTextField { id: addressField; Layout.fillWidth: true; placeholderText: "Dirección exacta *"; iconText: "🏠" }
+                Layout.fillWidth: true
+                spacing: 12
+
+                StyledTextField {
+                    id: nameField
+                    Layout.fillWidth: true
+                    placeholderText: "Nombre de la mascota *"
+                    iconText: "🏷️"
+                }
+
                 RowLayout {
-                    Layout.fillWidth: true; spacing: 12
-                    StyledTextField { id: phoneField; Layout.fillWidth: true; placeholderText: "Teléfono *"; iconText: "📞"; inputMethodHints: Qt.ImhDialableCharactersOnly }
-                    StyledTextField { id: emailField; Layout.fillWidth: true; placeholderText: "Email *"; iconText: "✉️"; inputMethodHints: Qt.ImhEmailCharactersOnly }
+                    Layout.fillWidth: true
+                    spacing: 12
+                    StyledComboBox {
+                        id: typeCombo
+                        Layout.fillWidth: true
+                        model: ["🐕 Perro", "🐈 Gato", "🦜 Otro"]
+                    }
+                    StyledComboBox {
+                        id: sexCombo
+                        Layout.fillWidth: true
+                        model: ["♂ Macho", "♀ Hembra"]
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    StyledTextField {
+                        id: ageField
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        placeholderText: "Edad *"
+                        inputMethodHints: Qt.ImhDigitsOnly
+                    }
+                    StyledComboBox {
+                        id: ageUnitCombo
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 2
+                        model: ["Años", "Meses", "Semanas"]
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 50
+                    radius: 10
+                    color: spayedCheck.checked ? "#fce7f3" : "#f9fafb"
+                    border.color: spayedCheck.checked ? Theme.brandPink : "#e5e7eb"
+                    border.width: 2
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
+                        spacing: 12
+                        Text { text: "✓"; font.pixelSize: 18; color: Theme.brandPink }
+                        CheckBox {
+                            id: spayedCheck
+                            text: "Esterilizado / Castrado"
+                            font.pixelSize: 14
+                            Layout.fillWidth: true
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 90
+                    radius: 10
+                    border.color: descField.activeFocus ? Theme.brandPink : "#e5e7eb"
+                    border.width: 2
+                    color: "#f9fafb"
+
+                    TextArea {
+                        id: descField
+                        placeholderText: "Descripción..."
+                        wrapMode: TextArea.Wrap
+                        font.pixelSize: 14
+                        color: Theme.textDark
+                        background: null
+                        anchors.fill: parent
+                        anchors.margins: 10
+                    }
+                }
+
+                StyledTextField {
+                    id: shelterNameField
+                    Layout.fillWidth: true
+                    placeholderText: "Nombre del Refugio *"
+                    iconText: "🏠"
+                }
+
+                // Venezuelan regex
+                StyledTextField {
+                    id: phoneField
+                    Layout.fillWidth: true
+                    placeholderText: "Teléfono (Venezuela) *"
+                    iconText: "📞"
+                    inputMethodHints: Qt.ImhDialableCharactersOnly
+
+                    validator: RegularExpressionValidator  {
+                        // 0 + 10 digits, e.g., 04141234567, 02125551234
+                        regularExpression: /^042((?:[246]+)(?:1[2456]))$/
+                    }
+                }
+
+                // email is optional
+                StyledTextField {
+                    id: emailField
+                    Layout.fillWidth: true
+                    placeholderText: "Correo electrónico (opcional)"
+                    iconText: "✉️"
+                    inputMethodHints: Qt.ImhEmailCharactersOnly
+
+                    validator: RegularExpressionValidator  {
+                        regularExpression: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+                    }
+                }
+
+                Text {
+                    text: "📍 La ubicación GPS se capturará automáticamente"
+                    font.pixelSize: 11
+                    color: Theme.textGray
+                    font.italic: true
                 }
             }
 
-            // --- MULTI-IMAGE UPLOAD SECTION ---
+            // IMAGES
             ColumnLayout {
                 spacing: 8
-                Text { text: "GALERÍA DE FOTOS"; font.bold: true; font.pixelSize: 11; color: Theme.textGray; font.letterSpacing: 0.5 }
-
-                // Horizontal list of images
+                Text {
+                    text: "FOTOS (" + root.selectedImages.length + ")"
+                    font.bold: true; font.pixelSize: 11; color: Theme.textGray
+                }
                 ScrollView {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 100
@@ -140,45 +339,42 @@ Popup {
 
                     Row {
                         spacing: 10
-
-                        // 1. Add Button (Always first)
                         Rectangle {
                             width: 100; height: 100; radius: 12
-                            color: "#f3f4f6"; border.color: "#d1d5db"; border.width: 1
-
+                            color: "#f3f4f6"
+                            border.color: "#d1d5db"
+                            border.width: 1
                             ColumnLayout {
-                                anchors.centerIn: parent; spacing: 4
+                                anchors.centerIn: parent
+                                spacing: 4
                                 Text { text: "📷"; font.pixelSize: 24; Layout.alignment: Qt.AlignHCenter }
                                 Text { text: "Añadir"; font.pixelSize: 12; color: Theme.textGray; Layout.alignment: Qt.AlignHCenter }
                             }
                             MouseArea { anchors.fill: parent; onClicked: fileDialog.open() }
                         }
-
-                        // 2. List of Selected Thumbnails
                         Repeater {
                             model: root.selectedImages
                             delegate: Rectangle {
-                                width: 100; height: 100; radius: 12; color: "#f3f4f6"; clip: true
-                                border.color: "#e5e7eb"; border.width: 1
-
+                                width: 100; height: 100; radius: 12
+                                color: "#f3f4f6"; clip: true
                                 Image {
                                     anchors.fill: parent
-                                    source: modelData // The path string
+                                    source: modelData
                                     fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
                                 }
-
-                                // Remove Button (X)
                                 Rectangle {
-                                    anchors.top: parent.top; anchors.right: parent.right; anchors.margins: 4
-                                    width: 24; height: 24; radius: 12; color: "white"
-                                    Text { anchors.centerIn: parent; text: "✕"; color: "red"; font.bold: true; font.pixelSize: 12 }
+                                    anchors.top: parent.top
+                                    anchors.right: parent.right
+                                    anchors.margins: 4
+                                    width: 24; height: 24; radius: 12
+                                    color: "white"
+                                    Text { anchors.centerIn: parent; text: "✕"; color: "red"; font.bold: true }
                                     MouseArea {
                                         anchors.fill: parent
                                         onClicked: {
                                             var list = root.selectedImages
-                                            list.splice(index, 1) // Remove item
-                                            root.selectedImages = [].concat(list) // Force update
+                                            list.splice(index, 1)
+                                            root.selectedImages = [].concat(list)
                                         }
                                     }
                                 }
@@ -186,82 +382,179 @@ Popup {
                         }
                     }
                 }
-
-                Text {
-                    visible: root.selectedImages.length === 0
-                    text: "Sube al menos una foto (Max 10MB)"
-                    font.pixelSize: 11
-                    color: Theme.textGray
-                }
             }
 
-            // --- ACTION BUTTONS ---
+            // ACTION BUTTONS
             RowLayout {
-                Layout.fillWidth: true; Layout.topMargin: 8; spacing: 12
+                Layout.fillWidth: true
+                Layout.topMargin: 8
+                spacing: 12
+
                 Button {
-                    Layout.fillWidth: true; Layout.preferredWidth: 1; Layout.preferredHeight: 50
-                    background: Rectangle { color: parent.pressed ? "#e5e7eb" : "#f3f4f6"; radius: 12; border.color: "#d1d5db"; border.width: 1 }
-                    contentItem: Text { text: "Cancelar"; color: Theme.textGray; font.bold: true; font.pixelSize: 15; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 50
+                    background: Rectangle { color: "#f3f4f6"; radius: 12 }
+                    contentItem: Text {
+                        text: "Cancelar"
+                        color: Theme.textGray; font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                     onClicked: root.close()
                 }
+
                 Button {
-                    Layout.fillWidth: true; Layout.preferredWidth: 2; Layout.preferredHeight: 50
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 2
+                    Layout.preferredHeight: 50
                     enabled: root.isFormValid
-                    background: Rectangle { color: parent.enabled ? (parent.pressed ? "#ec4899" : Theme.brandPink) : "#d1d5db"; radius: 12; Behavior on color { ColorAnimation { duration: 200 } } }
-                    contentItem: Row {
-                        spacing: 8; anchors.centerIn: parent
-                        Text { text: "✓"; color: "white"; font.pixelSize: 18; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
-                        Text { text: "Guardar Perfil"; color: "white"; font.bold: true; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
+                    background: Rectangle {
+                        color: parent.enabled ? Theme.brandPink : "#d1d5db"
+                        radius: 12
                     }
+                    contentItem: Text {
+                        text: root.isEditMode ? "Guardar Cambios" : "Crear Perfil"
+                        color: "white"; font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
                     onClicked: {
                         var cleanType = typeCombo.currentText.replace(/[^\w\s]/gi, '').trim()
                         var cleanSex = sexCombo.currentText.replace(/[^\w\s]/gi, '').trim()
+                        var fullAge = ageField.text + " " + ageUnitCombo.currentText
 
-                        root.petAdded(
-                            nameField.text, cleanType, ageField.text, ageUnitCombo.currentText,
-                            cleanSex, spayedCheck.checked, locField.text, addressField.text,
-                            emailField.text, phoneField.text, root.selectedImages // Pass array
-                        )
+                        var description = descField.text.trim()
+                        if (description === "")
+                            description = "Sin descripción disponible"
 
-                        // Clean up
-                        nameField.text = ""; ageField.text = ""; locField.text = ""; addressField.text = ""; emailField.text = ""; phoneField.text = ""; descField.text = ""; root.selectedImages = []; spayedCheck.checked = false
+                        var phone = phoneField.text.trim()
+                        var email = emailField.text.trim()
+
+                        console.log("Saving with description:", description)
+                        console.log("Saving with", root.selectedImages.length, "images")
+
+                        if (root.isEditMode) {
+                            root.petUpdated(
+                                root.editId,
+                                nameField.text,
+                                cleanType,
+                                fullAge,
+                                shelterNameField.text,
+                                description,
+                                phone,
+                                email,
+                                root.selectedImages
+                            )
+                        } else {
+                            root.petAdded(
+                                nameField.text,
+                                cleanType,
+                                ageField.text,
+                                ageUnitCombo.currentText,
+                                cleanSex,
+                                spayedCheck.checked,
+                                shelterNameField.text,
+                                description,
+                                phone,
+                                email,
+                                root.selectedImages
+                            )
+                        }
                         root.close()
                     }
                 }
             }
         }
     }
-    // Custom components (StyledTextField, StyledComboBox)
+
+    // Styled components
     component StyledTextField: Rectangle {
         id: textFieldRoot
         property alias text: innerField.text
         property alias placeholderText: innerField.placeholderText
         property alias inputMethodHints: innerField.inputMethodHints
+        property alias validator: innerField.validator   // expose validator
+        property alias acceptableInput: innerField.acceptableInput
         property string iconText: ""
-        readonly property bool isFocused: innerField.activeFocus
-        implicitWidth: 200; implicitHeight: 50
-        radius: 10; color: "#f9fafb"; border.color: innerField.activeFocus ? Theme.brandPink : "#e5e7eb"; border.width: 2
-        Behavior on border.color { ColorAnimation { duration: 200 } }
+
+        implicitHeight: 50
+        radius: 10
+        color: "#f9fafb"
+        border.color: innerField.activeFocus ? Theme.brandPink : "#e5e7eb"
+        border.width: 2
+
         RowLayout {
-            anchors.fill: parent; anchors.leftMargin: 14; anchors.rightMargin: 14; spacing: 10
-            Text { text: textFieldRoot.iconText; font.pixelSize: 18; visible: textFieldRoot.iconText !== "" }
-            TextField { id: innerField; Layout.fillWidth: true; font.pixelSize: 14; color: Theme.textDark; placeholderTextColor: Theme.textGray; background: null; verticalAlignment: TextInput.AlignVCenter }
+            anchors.fill: parent
+            anchors.leftMargin: 14
+            anchors.rightMargin: 14
+            spacing: 10
+            Text {
+                text: textFieldRoot.iconText
+                font.pixelSize: 18
+                visible: textFieldRoot.iconText !== ""
+            }
+            TextField {
+                id: innerField
+                Layout.fillWidth: true
+                font.pixelSize: 14
+                color: Theme.textDark
+                background: null
+                verticalAlignment: TextInput.AlignVCenter
+            }
         }
     }
+
     component StyledComboBox: ComboBox {
         id: comboRoot
-        implicitWidth: 200; implicitHeight: 50
-        background: Rectangle { radius: 10; color: "#f9fafb"; border.color: comboRoot.pressed ? Theme.brandPink : "#e5e7eb"; border.width: 2; Behavior on border.color { ColorAnimation { duration: 200 } } }
-        contentItem: Text { leftPadding: 14; rightPadding: 44; text: comboRoot.displayText; font.pixelSize: 14; color: Theme.textDark; verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight }
+        implicitHeight: 50
+        background: Rectangle {
+            radius: 10
+            color: "#f9fafb"
+            border.color: comboRoot.pressed ? Theme.brandPink : "#e5e7eb"
+            border.width: 2
+        }
+        contentItem: Text {
+            leftPadding: 14
+            rightPadding: 44
+            text: comboRoot.displayText
+            font.pixelSize: 14
+            color: Theme.textDark
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
         delegate: ItemDelegate {
-            width: comboRoot.width; height: 44
-            contentItem: Text { text: modelData; color: Theme.textDark; font.pixelSize: 14; elide: Text.ElideRight; verticalAlignment: Text.AlignVCenter; leftPadding: 14 }
-            background: Rectangle { radius: 8; color: parent.highlighted ? "#fce7f3" : "transparent" }
+            width: comboRoot.width
+            height: 44
+            contentItem: Text {
+                text: modelData
+                color: Theme.textDark
+                font.pixelSize: 14
+                verticalAlignment: Text.AlignVCenter
+                leftPadding: 14
+            }
+            background: Rectangle {
+                radius: 8
+                color: parent.highlighted ? "#fce7f3" : "transparent"
+            }
         }
         popup: Popup {
-            y: comboRoot.height + 4; width: comboRoot.width; implicitHeight: contentItem.implicitHeight; padding: 4
-            contentItem: ListView { clip: true; implicitHeight: contentHeight; model: comboRoot.popup.visible ? comboRoot.delegateModel : null; currentIndex: comboRoot.highlightedIndex; ScrollIndicator.vertical: ScrollIndicator { } }
-            background: Rectangle { color: "white"; border.color: "#e5e7eb"; radius: 10 }
+            y: comboRoot.height + 4
+            width: comboRoot.width
+            implicitHeight: contentItem.implicitHeight
+            padding: 4
+            contentItem: ListView {
+                clip: true
+                implicitHeight: contentHeight
+                model: comboRoot.popup.visible ? comboRoot.delegateModel : null
+                currentIndex: comboRoot.highlightedIndex
+            }
+            background: Rectangle {
+                color: "white"
+                border.color: "#e5e7eb"
+                radius: 10
+            }
         }
     }
 }

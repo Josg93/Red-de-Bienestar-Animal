@@ -7,7 +7,6 @@ import ApplicationViews
 import Popups
 import Start
 
-
 Rectangle {
     id: root
 
@@ -31,8 +30,6 @@ Rectangle {
                 {"name": "Adopciones", "icon":"icons/pawIcon"},
                 {"name": "Casos", "icon": "icons/casesIcon.svg"},
                 {"name": "Perdidos", "icon": "icons/lostIcon.svg"},
-                //{"name": "Perfil", "icon": "icons/profileIcon.svg"},
-
             ]
 
             Item {
@@ -44,8 +41,9 @@ Rectangle {
 
                 property bool selected: root.currentIndex === index
 
-                // check if the icon string is a file path or an emoji -> NEED TO FIX
-                property bool isImagePath: modelData.icon.toString().indexOf("/") >= 0 || modelData.icon.toString().indexOf(".svg") >= 0
+                // Helper property to check if the icon string is a file path or an emoji
+                property bool isImagePath: modelData.icon.toString().indexOf("/") >= 0 ||
+                                           modelData.icon.toString().indexOf(".svg") >= 0
 
                 ColumnLayout {
                     anchors.centerIn: parent
@@ -58,23 +56,18 @@ Rectangle {
 
                         icon.source: parent.parent.isImagePath ? parent.parent.modelData.icon : ""
                         icon.color: parent.parent.selected ? Theme.brandPink : Theme.iconNormal
-
-                        // Force exact size to match your text icons
                         icon.width: 38
                         icon.height: 38
                         Layout.preferredWidth: 45
                         Layout.preferredHeight: 42
                         Layout.alignment: Qt.AlignHCenter
 
-                        // Disable internal mouse interaction so the parent MouseArea works
                         hoverEnabled: false
                         enabled: false
-                        // Note: If 'enabled: false' makes it too light/grey,
-                        // remove 'enabled: false' and rely on the MouseArea (below) being on top.
                     }
-                    // 2. TEXT COMPONENT (Shows only if it is NOT a path)
+
                     Text {
-                        visible: !parent.parent.isImagePath // Only show if it is an emoji I HAVE TO DELETE THIS
+                        visible: !parent.parent.isImagePath
                         text: parent.parent.modelData.icon
 
                         font.pixelSize: 45
@@ -98,3 +91,4 @@ Rectangle {
         }
     }
 }
+
